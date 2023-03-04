@@ -24,3 +24,9 @@ matrix-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Tasks only for current tasks about project development
+tasks.txt
+
+# Delete from changes file storage for local testing
+**/csv_storage/

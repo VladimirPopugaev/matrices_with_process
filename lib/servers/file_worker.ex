@@ -7,28 +7,29 @@ defmodule Servers.FileWorker do
   """
 
   alias Matrix.SquareMatrix
-  import Servers.MatrixProcess, only: [via_tuple: 2]
   use GenServer
-
-  @storage_path "./csv_storage"
 
   # ###########################################
   # INTERFACE FUN
   # ###########################################
 
-  @spec start_link(String.t()) :: {:ok, pid()} | {:error, any()}
-  def start_link(file_name) do
-    IO.puts("Start file_worker server for #{file_name}")
+  @spec start_link(tuple()) :: {:ok, pid()} | {:error, any()}
+  def start_link({storage_folder, worker_id}) do
+    IO.puts("Start file_worker server with id = #{worker_id}")
 
-    GenServer.start_link(__MODULE__, file_name, name: via_tuple(__MODULE__, file_name))
+    GenServer.start_link(__MODULE__, storage_folder, name: via_tuple(worker_id))
   end
 
-  def save_matrix(file_name, %SquareMatrix{} = data) do
-    GenServer.cast(via_tuple(__MODULE__, file_name), {:save_matrix, data})
+  def save_matrix(worker_id, file_name, %SquareMatrix{} = data) do
+    GenServer.cast(via_tuple(worker_id), {:save_matrix, file_name, data})
   end
 
-  def get_content(file_name) do
-    GenServer.call(via_tuple(__MODULE__, file_name), :get_content)
+  def get_content(worker_id, file_name) do
+    GenServer.call(via_tuple(worker_id), {:get_content, file_name})
+  end
+
+  defp via_tuple(worker_id) do
+    Servers.ProcessRegistry.via_tuple({__MODULE__, worker_id})
   end
 
   # ###########################################
@@ -37,21 +38,19 @@ defmodule Servers.FileWorker do
 
   @impl GenServer
   def init(file_name) do
-    File.mkdir_p!(@storage_path)
-
     {:ok, file_name}
   end
 
   @impl GenServer
-  def handle_cast({:save_matrix, data}, file_name) do
-    :ok = save_csv(file_name, data)
+  def handle_cast({:save_matrix, file_name, data}, storage_folder) do
+    :ok = save_csv(storage_folder, file_name, data)
 
-    {:noreply, file_name}
+    {:noreply, storage_folder}
   end
 
-  defp save_csv(file_name, data) do
+  defp save_csv(storage_folder, file_name, data) do
     try do
-      file_path(@storage_path, file_name)
+      file_path(storage_folder, file_name)
       |> File.write!(:erlang.term_to_binary(data))
 
       :ok
@@ -61,13 +60,13 @@ defmodule Servers.FileWorker do
   end
 
   @impl GenServer
-  def handle_call(:get_content, _from, file_name) do
-    {:reply, get_content_of_file(file_name), file_name}
+  def handle_call({:get_content, file_name}, _from, storage_folder) do
+    {:reply, get_content_of_file(storage_folder, file_name), storage_folder}
   end
 
-  defp get_content_of_file(file_name) do
+  defp get_content_of_file(storage_folder, file_name) do
     file_data =
-      file_path(@storage_path, file_name)
+      file_path(storage_folder, file_name)
       |> File.read()
 
     case file_data do
