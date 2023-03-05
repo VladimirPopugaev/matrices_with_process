@@ -1,13 +1,21 @@
 # Matrix
 
-# Назначение
+**TODO: Add description**
 
-Данный проект сортирует множество матриц в разных процессах и сохраняет этот результат.
-Сама матрица представляет собой отдельную структуру, расположенную в модуле `Matrix.SquareMatrix`
+## Installation
 
-# Как работает
+If [available in Hex](https://hex.pm/docs/publish), the package can be installed
+by adding `matrix` to your list of dependencies in `mix.exs`:
 
-1. Создаётся новый процесс с помощью функции `Servers.MatrixProcess.start_link/1` Эта функция запускает отдельный процесс для обеспечения сохранения и изъятия матрицы из файла. Затем уже создаётся отдельный процесс для работы с матрицей. Процесс для работы с матрицей хранит в себе состояние {имя_матрицы, сама матрица}. При инициализации состояния проверяется наличие файла для матрицы с таким именем.
+```elixir
+def deps do
+  [
+    {:matrix, "~> 0.1.0"}
+  ]
+end
+```
 
-2. Все действия с матрицей выполняются функциями модуля `Servers.MatrixProcess`. Чтоб понимать, какая именно матрица должна быть изменена, первым аргументом для всех функций принимается имя матрицы. При изменении матрицы происходит асинхронное сохранение в файле. 
+Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
+and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
+be found at <https://hexdocs.pm/matrix>.
 
