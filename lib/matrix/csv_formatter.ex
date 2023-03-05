@@ -1,4 +1,10 @@
 defmodule Matrix.CsvFormatter do
+  @moduledoc """
+
+  The module is responsible for the processing of `.csv` files.
+
+  """
+
   @doc """
 
   It takes as input the name of the file in which the matrix is stored in csv format.

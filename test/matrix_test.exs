@@ -109,4 +109,18 @@ defmodule Test.MatrixTest do
       assert [1, 2] = SquareMatrix.sort_matrix_row!(row)
     end
   end
+
+  describe "Matrix full sort test: " do
+    setup %{} do
+      %{dimension: dimension, array_elems: matrix} = MatrixData.get_not_sort_matrix()
+      new_matrix = SquareMatrix.new_matrix(dimension, matrix)
+
+      {:ok, matrix: new_matrix}
+    end
+
+    test "success test", %{matrix: matrix} do
+      assert %SquareMatrix{} = sort_matrix = SquareMatrix.full_sort_matrix(matrix)
+      assert sort_matrix.array_elems == [[1, 2], [3, 4]]
+    end
+  end
 end

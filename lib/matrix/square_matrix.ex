@@ -81,6 +81,19 @@ defmodule Matrix.SquareMatrix do
     end
   end
 
+  @doc """
+
+  It takes `%SquareMatrix{}` structure as input and updates it with one row with index equal to `index`.
+
+  If successful, it returns updated structure `%SquareMatrix{}`. Otherwise it returns error tuple
+  `{:error, message}`.
+
+  ## Params:
+    - matrix: `%SquareMatrix{}` struct for updating
+    - new_row: list with new elements of row for inserting instead old row
+    - index: index of row in matrix
+
+  """
   @spec set_row(%Matrix.SquareMatrix{}, list(integer()), non_neg_integer()) ::
           %Matrix.SquareMatrix{} | {:error, String.t()}
   def set_row(matrix, new_row, index) do
@@ -108,12 +121,52 @@ defmodule Matrix.SquareMatrix do
     Enum.sort(matrix_row)
   end
 
+  @doc """
+
+  Takes `%SquareMatrix{}` structure, extracts string with index equal to `index`. Sorts the
+  string and then sets it back into the matrix.
+
+  If sorting is successful, it returns updated `%SquareMatrix{}` structure. Otherwise it returns
+  error tuple `{:error, message}`.
+
+  ## Params:
+    - matrix: `%SquareMatrix{}` struct for sorting
+    - index: index of row for sorting
+
+  """
+  @spec sort_matrix_row(%Matrix.SquareMatrix{}, non_neg_integer()) :: %Matrix.SquareMatrix{}
   def sort_matrix_row(%Matrix.SquareMatrix{} = matrix, index) do
     with {:ok, row} <- get_row(matrix, index),
          sotred_row <- sort_matrix_row!(row) do
       set_row(matrix, sotred_row, index)
     else
       {:error, _message} = error -> error
+    end
+  end
+
+  @doc """
+
+  If a structure `%Matrix.SquareMatrix{}` is passed, it sorts and returns the updated structure.
+
+  If a list consisting of lists with matrix elements is passed, it sorts and also returns the list.
+
+  ## Params:
+    - matrix: `%SquareMatrix{}` struct or list with lists for sorting
+
+  """
+  @spec full_sort_matrix(%Matrix.SquareMatrix{} | list()) :: %Matrix.SquareMatrix{} | list()
+  def full_sort_matrix(%Matrix.SquareMatrix{} = matrix) do
+    sorted_matrix =
+      for row <- matrix.array_elems do
+        sort_matrix_row!(row)
+      end
+
+    %{matrix | array_elems: sorted_matrix}
+  end
+
+  def full_sort_matrix(matrix) when is_list(matrix) do
+    for row <- matrix do
+      sort_matrix_row!(row)
     end
   end
 end
