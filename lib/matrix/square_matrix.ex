@@ -169,4 +169,28 @@ defmodule Matrix.SquareMatrix do
       sort_matrix_row!(row)
     end
   end
+
+  @doc """
+
+  Splits the matrix into separate sets of elements for parallel processing of rows. Creates a `Task`
+  set for sorting (number of rows / 10). Then collects all answers and updates the passed structure.
+
+  ## Params:
+    - matrix: `%SquareMatrix{}` struct or list with lists for sorting
+
+  """
+  @spec async_sort_matrix(%Matrix.SquareMatrix{}) :: %Matrix.SquareMatrix{}
+  def async_sort_matrix(matrix) do
+    sorted_array =
+      Helpers.Helper.sublists_from_list(matrix.array_elems, ceil(matrix.dim / 10))
+      |> Task.async_stream(fn sublist -> full_sort_matrix(sublist) end, timeout: :infinity)
+      |> Enum.reduce([], fn {:ok, sublist}, acc -> [sublist | acc] end)
+      |> Stream.concat()
+      |> Enum.reverse()
+
+    # |> Enum.map(&Task.async(fn -> full_sort_matrix(&1) end))
+    # |> Enum.reduce([], fn task, acc -> acc ++ Task.await(task) end)
+
+    %{matrix | array_elems: sorted_array}
+  end
 end

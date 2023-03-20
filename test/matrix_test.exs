@@ -90,7 +90,6 @@ defmodule Test.MatrixTest do
       assert new_matrix == matrix
     end
 
-    @tag current_test: "yes"
     test "error test: normal index and bad row", %{matrix: matrix} do
       assert {:error, "This row does not match the size of the matrix"} = SquareMatrix.set_row(matrix, [5, 6, 7], 0)
     end
@@ -121,6 +120,32 @@ defmodule Test.MatrixTest do
     test "success test", %{matrix: matrix} do
       assert %SquareMatrix{} = sort_matrix = SquareMatrix.full_sort_matrix(matrix)
       assert sort_matrix.array_elems == [[1, 2], [3, 4]]
+    end
+  end
+
+  describe "Matrix sort (parallel and sequential): " do
+    test "matrix 10x10 success test" do
+      matr = MatrixData.get_matrix_struct(10)
+
+      assert %SquareMatrix{} = SquareMatrix.full_sort_matrix(matr)
+      assert %SquareMatrix{} = SquareMatrix.async_sort_matrix(matr)
+    end
+
+    test "matrix 500x500 success test" do
+      matr = MatrixData.get_matrix_struct(500)
+
+      assert %SquareMatrix{} = SquareMatrix.full_sort_matrix(matr)
+      assert %SquareMatrix{} = SquareMatrix.async_sort_matrix(matr)
+    end
+
+    test "matrix 10_000x10_000 success test" do
+      matr = MatrixData.get_matrix_struct(10_000)
+
+      assert %SquareMatrix{} = SquareMatrix.full_sort_matrix(matr)
+      assert %SquareMatrix{} = SquareMatrix.async_sort_matrix(matr)
+
+      :erlang.memory(:processes)
+      |> IO.puts()
     end
   end
 end

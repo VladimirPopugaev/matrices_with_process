@@ -11,9 +11,7 @@ defmodule Servers.MatrixProcess do
   use GenServer
 
   # The number of elements of one matrix row, after which the division into several processes begins
-  @async_count_row 1_000_000
-  # The number of matrix rows that are processed by one process
-  @count_row_at_one_process 100_000
+  @async_count_row 1_000
 
   # ###########################################
   # INTERFACE FUN
@@ -85,11 +83,13 @@ defmodule Servers.MatrixProcess do
 
   ## Params:
     - matrix_name: string with name of matrix (for indentity process)
+    - save_matrix?: a flag that indicates whether the matrix should be saved in memory
+    (`true` - save (default), `false` - do not save)
 
   """
-  @spec sort_matrix(String.t()) :: %SquareMatrix{}
-  def sort_matrix(matrix_name) do
-    GenServer.call(via_tuple(matrix_name), :sort_matrix)
+  @spec sort_matrix(String.t(), boolean()) :: %SquareMatrix{}
+  def sort_matrix(matrix_name, save_matrix? \\ true) do
+    GenServer.call(via_tuple(matrix_name), {:sort_matrix, save_matrix?}, :infinity)
   end
 
   @doc """
@@ -100,11 +100,13 @@ defmodule Servers.MatrixProcess do
   ## Params:
     - matrix_name: string with name of matrix (for indentity process)
     - new_struct: `%SquareMatrix{}` struct for new state of process
+    - save_matrix?: a flag that indicates whether the matrix should be saved in memory
+    (`true` - save (default), `false` - do not save)
 
   """
-  @spec set_matrix(String.t(), %SquareMatrix{}) :: %SquareMatrix{}
-  def set_matrix(matrix_name, new_struct) do
-    GenServer.call(via_tuple(matrix_name), {:set_matrix, new_struct})
+  @spec set_matrix(String.t(), %SquareMatrix{}, boolean()) :: %SquareMatrix{}
+  def set_matrix(matrix_name, new_struct, save_mantrix? \\ true) do
+    GenServer.call(via_tuple(matrix_name), {:set_matrix, new_struct, save_mantrix?})
   end
 
   # ###########################################
@@ -147,33 +149,25 @@ defmodule Servers.MatrixProcess do
     {:reply, new_matrix, {matrix_name, new_matrix}}
   end
 
-  def handle_call(:sort_matrix, _from, {matrix_name, matrix}) do
+  def handle_call({:sort_matrix, save_matrix?}, _from, {matrix_name, matrix}) do
     sorted_matrix =
       cond do
-        matrix.dim >= @async_count_row -> async_sort_matrix(matrix)
+        matrix.dim >= @async_count_row -> SquareMatrix.async_sort_matrix(matrix)
         true -> SquareMatrix.full_sort_matrix(matrix)
       end
 
-    FileSupervisor.save_matrix(matrix_name, sorted_matrix)
+    if save_matrix? do
+      FileSupervisor.save_matrix(matrix_name, sorted_matrix)
+    end
 
     {:reply, sorted_matrix, {matrix_name, sorted_matrix}}
   end
 
-  def handle_call({:set_matrix, new_state}, _from, {matrix_name, _matrix}) do
-    FileSupervisor.save_matrix(matrix_name, new_state)
+  def handle_call({:set_matrix, new_state, save_matrix?}, _from, {matrix_name, _matrix}) do
+    if save_matrix? do
+      FileSupervisor.save_matrix(matrix_name, new_state)
+    end
 
     {:reply, new_state, {matrix_name, new_state}}
-  end
-
-  # Splits the full matrix into submatrices with the number of rows equal to `@count_row_at_one_process`.
-  # Then it runs asynchronous tasks according to the number of resulting submatrices, and then collects
-  # the result in the structure `%SquareMatrix{}`.
-  defp async_sort_matrix(matrix) do
-    sorted_array =
-      Helpers.Helper.sublists_from_list(matrix.array_elems, @count_row_at_one_process)
-      |> Enum.map(&Task.async(fn -> SquareMatrix.full_sort_matrix(&1) end))
-      |> Enum.reduce([], fn task, acc -> acc ++ Task.await(task) end)
-
-    %{matrix | array_elems: sorted_array}
   end
 end

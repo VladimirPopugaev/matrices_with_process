@@ -9,6 +9,12 @@ defmodule Test.MatrixData do
     }
   end
 
+  def get_matrix_struct(dim) do
+    list = Enum.map(1..dim, fn _x -> Enum.to_list(dim..1) end)
+
+    Matrix.SquareMatrix.new_matrix(dim, list)
+  end
+
   def get_not_sort_matrix do
     %{
       dimension: 2,
